@@ -210,7 +210,7 @@ TickTwo tSgp41HeatingOn(sgp41HeatingOn, 500, 0, MILLIS);  // (function, interval
 TickTwo tSgp41HeatingOff(sgp41HeatingOff, 0, 0, MILLIS);  // (function, interval, iteration, interval unit)
 
 void    wifiDisconnectedDetect();
-TickTwo tWifiDisconnectedDetect(wifiDisconnectedDetect, 300000, 0, MILLIS);  // Every 5 minutes
+TickTwo tWifiDisconnectedDetect(wifiDisconnectedDetect, 60000, 0, MILLIS);  // Every 1 minutes
 
 void    connectMqtt();
 void    reconnectMqtt();
@@ -290,7 +290,7 @@ void printFile(fs::FS& fs, const char* filename) {
     serializeJsonPretty(doc, buffer);
     _delnF(buffer);
 
-    file.close();  // Close the file
+    file.close();
 }
 
 void deleteFile(fs::FS& fs, const char* path) {
@@ -312,7 +312,7 @@ void wifiManagerSetup() {
     WiFiManagerParameter customMqttPort("port", "mqtt port", mqttPort, 6);
     WiFiManagerParameter customMqttUser("user", "mqtt user", mqttUser, 10);
     WiFiManagerParameter customMqttPass("pass", "mqtt pass", mqttPass, 10);
-    // end block code
+    // end of block code
 
     wifiManager.setSaveConfigCallback(saveConfigCallback);
 
@@ -384,8 +384,7 @@ void wifiManagerSetup() {
             _deVarln("The configuration has been saved to ", filename);
         }
 
-        file.close();  // Close the file
-        // end save
+        file.close();
     }
 
     _deVar("ip: ", WiFi.localIP());
@@ -800,6 +799,8 @@ void readData() {
     _deF("VEML7700: Lux: ");
     _de(lux, 2);
     _deln();
+
+    _delnF("\tdata reading is done.");
 }
 
 void sendData() {
@@ -868,12 +869,16 @@ void sendData() {
     doc_9["fields"]["lux"] = lux;
 
     doc.shrinkToFit();  // optional
-    char jsonBuffer[1024];
+    char jsonBuffer[1100];
     serializeJson(doc, jsonBuffer);
 
     mqtt.publish(MQTT_PUB_JSON, jsonBuffer);
 
-    // _deln("JSON: " + String(jsonBuffer));
+    // Print the JSON document
+    // memset(jsonBuffer, 0, sizeof(jsonBuffer));  // Clear the buffer
+    // serializeJsonPretty(doc, jsonBuffer);
+    // _delnF(jsonBuffer);
+
     _delnF("\nData sending is done.");
 }
 
@@ -897,11 +902,9 @@ void IRAM_ATTR fetchData() {
 #endif
 
     _deln(checkMinMatch(tMin) ? "true" : "false");
-
     if (checkMinMatch(tMin)) {
         readData();
         sendData();
-        _delnF("\tdata reading is done.");
     } else {
         _delnF("\tread data next time.");
     }
@@ -967,7 +970,7 @@ void printScd41Config(String prefix) {
     float    tempOffset    = 0.0f;
     uint16_t tempOffsetRaw = 0, altitude = 0;
 
-    _deF(prefix);
+    _de(prefix);
     scd41.getTemperatureOffset(tempOffset);
     _deF(" tempOffset: ");
     _de(tempOffset, 2);
