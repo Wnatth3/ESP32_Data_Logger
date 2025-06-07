@@ -44,8 +44,6 @@
 // #define _15Min  // Uncomment this line if you want to read sensors every 15 minutes
 
 //******************************** Variables & Objects **********************//
-#define FORMAT_LITTLEFS_IF_FAILED true
-
 #define deviceName "WeatherSt"
 
 //----------------- esLED ---------------------//
@@ -998,9 +996,8 @@ void setup() {
     resetWifiBt.setLongClickTime(5000);
     resetWifiBt.setLongClickDetectedHandler(resetWifiBtPressed);
 
-    while (!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)) {
+    while (!LittleFS.begin(true)) {  // true = format if mount failed
         _delnF("Failed to initialize LittleFS library");
-
         delay(1000);
     }
     // BME680
