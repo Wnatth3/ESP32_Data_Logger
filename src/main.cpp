@@ -1,11 +1,3 @@
-/*
-Log:
-20.2.1  - Change tReconnectMqtt() logic
-20.2    - Add easyButton library
-        - Change update time to NTPClient Library
-20.0    - Base on 19.3
-        - Change Adafruit_BME680 to BSEC library
-*/
 
 #include <Arduino.h>
 #include <FS.h>  //this needs to be first, or it all crashes and burns.../
