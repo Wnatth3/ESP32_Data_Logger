@@ -34,12 +34,12 @@
 #include <Button2.h>
 
 //******************************** Configulation ****************************//
-// #define _DEBUG_  // Comment this line if you don't want to debug
+#define _DEBUG_  // Comment this line if you don't want to debug
 #include "Debug.h"
 
 // -- Read Sensores every 5, 10, or 15 minutes -- //
-// #define _20SecTest  // Uncomment this line if you want 20sec Sensors Test
-#define _5Min  // Uncomment this line if you want to read sensors every 5 minutes
+#define _20SecTest  // Uncomment this line if you want 20sec Sensors Test
+// #define _5Min  // Uncomment this line if you want to read sensors every 5 minutes
 // #define _10Min  // Uncomment this line if you want to read sensors every 10 minutes
 // #define _15Min  // Uncomment this line if you want to read sensors every 15 minutes
 
@@ -534,7 +534,7 @@ void setupAlarm() {
 #ifdef _20SecTest
     // Set alarm time
     rtc.setAlarm1(rtc.now() + TimeSpan(0, 0, 0, 20), DS3231_A1_Second);  // Test
-    _deF("Trigger next time: "));
+    _deF("Trigger next time: ");
     _deln(String(roundSec(rtc.now().second() + 20)) + "th sec.");
 
 #else
@@ -563,14 +563,23 @@ void IRAM_ATTR onRtcTrigger() { rtcTrigger = true; }
 
 // 15 minute match 0, 15, 30, and 45
 bool checkMinMatch(int tMin) {
+    // #ifdef _5Min
+    //     return tMin >= 0 && tMin % 5 == 0 && tMin < 60;
+    // #endif
+    // #ifdef _10Min
+    //     return tMin >= 0 && tMin % 10 == 0 && tMin < 60;
+    // #endif
+    // #ifdef _15Min
+    //     return tMin >= 0 && tMin % 15 == 0 && tMin < 60;
+    // #endif
 #ifdef _5Min
     return tMin >= 0 && tMin % 5 == 0 && tMin < 60;
-#endif
-#ifdef _10Min
+#elif defined(_10Min)
     return tMin >= 0 && tMin % 10 == 0 && tMin < 60;
-#endif
-#ifdef _15Min
+#elif defined(_15Min)
     return tMin >= 0 && tMin % 15 == 0 && tMin < 60;
+#else
+    return false;
 #endif
 }
 
