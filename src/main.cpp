@@ -34,12 +34,12 @@
 #include <Button2.h>
 
 //******************************** Configulation ****************************//
-#define _DEBUG_  // Comment this line if you don't want to debug
+// #define _DEBUG_  // Comment this line if you don't want to debug
 #include "Debug.h"
 
 // -- Read Sensores every 5, 10, or 15 minutes -- //
-#define _20SecTest  // Uncomment this line if you want 20sec Sensors Test
-// #define _5Min  // Uncomment this line if you want to read sensors every 5 minutes
+// #define _20SecTest  // Uncomment this line if you want 20sec Sensors Test
+#define _5Min  // Uncomment this line if you want to read sensors every 5 minutes
 // #define _10Min  // Uncomment this line if you want to read sensors every 10 minutes
 // #define _15Min  // Uncomment this line if you want to read sensors every 15 minutes
 
@@ -561,17 +561,9 @@ void setupAlarm() {
 
 void IRAM_ATTR onRtcTrigger() { rtcTrigger = true; }
 
+#ifndef _20SecTest
 // 15 minute match 0, 15, 30, and 45
 bool checkMinMatch(int tMin) {
-    // #ifdef _5Min
-    //     return tMin >= 0 && tMin % 5 == 0 && tMin < 60;
-    // #endif
-    // #ifdef _10Min
-    //     return tMin >= 0 && tMin % 10 == 0 && tMin < 60;
-    // #endif
-    // #ifdef _15Min
-    //     return tMin >= 0 && tMin % 15 == 0 && tMin < 60;
-    // #endif
 #if defined(_5Min)
     return tMin >= 0 && tMin % 5 == 0 && tMin < 60;
 #elif defined(_10Min)
@@ -582,6 +574,7 @@ bool checkMinMatch(int tMin) {
     return false;
 #endif
 }
+#endif
 
 //----------------- Collect Data --------------//
 
@@ -965,14 +958,6 @@ void connectMqtt() {
     }
 }
 
-void checkSensor(bool condition, String sensorName) {
-    if (condition) {
-        _deln(sensorName + ": Available");
-    } else {
-        _deln(sensorName + ": Failed!");
-    }
-}
-
 void printScd41Config(String prefix) {
     float    tempOffset    = 0.0f;
     uint16_t tempOffsetRaw = 0, altitude = 0;
@@ -1013,7 +998,8 @@ void setup() {
     iaqSensor.begin(BME68X_I2C_ADDR_HIGH, Wire); // BME68X_I2C_ADDR_HIGH(default) = 0x77, BME68X_I2C_ADDR_LOW = 0x76
     iaqSensor.updateSubscription(sensorList, 13, BSEC_SAMPLE_RATE_LP);
     // VEML7700
-    checkSensor(veml.begin(), "VEML7700");
+    if (!veml.begin()) _delnF("VEML7700 is not found");
+    
     // MH-Z19B
     mySerial.begin(9600, SERIAL_8N1, rxPin2, txPin2);  // (Uno example) device to MH-Z19 serial start
     myMHZ19.begin(mySerial);                           // *Serial(Stream) reference must be passed to library begin().
@@ -1028,11 +1014,11 @@ void setup() {
     // uint64_t serialNumber = 0;
     // scd41.getSerialNumber(serialNumber);
 
-    printScd41Config("");
+    // printScd41Config("");
     scd41.setTemperatureOffset(3.5f);  // Default: 4 C, Sweet spot: 3.5 C
     scd41.setSensorAltitude(310);      // Set altitude to 0m (default)
     scd41.persistSettings();           // Save settings to EEPROM
-    printScd41Config("After");
+    // printScd41Config("After");
     scd41.startPeriodicMeasurement();
 
     // SHT40
@@ -1040,10 +1026,10 @@ void setup() {
     // SGP41
     sgp41.begin(Wire);
     // AHT21
-    checkSensor(aht21.begin(), "AHT21");
+    if (!aht21.begin()) _delnF("AHT21 is not found");
     // ENS160
     ens160.begin();
-    checkSensor(ens160.available(), "ENS160");
+    if (!ens160.available()) _delnF("ENS160 is not found");
     ens160.setMode(ENS160_OPMODE_STD);
     // DHT22
     dht.begin();
