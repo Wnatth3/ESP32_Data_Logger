@@ -572,7 +572,7 @@ bool checkMinMatch(int tMin) {
     // #ifdef _15Min
     //     return tMin >= 0 && tMin % 15 == 0 && tMin < 60;
     // #endif
-#ifdef _5Min
+#if defined(_5Min)
     return tMin >= 0 && tMin % 5 == 0 && tMin < 60;
 #elif defined(_10Min)
     return tMin >= 0 && tMin % 10 == 0 && tMin < 60;
@@ -1010,7 +1010,7 @@ void setup() {
         delay(1000);
     }
     // BME680
-    iaqSensor.begin(BME68X_I2C_ADDR_LOW, Wire);
+    iaqSensor.begin(BME68X_I2C_ADDR_HIGH, Wire);
     iaqSensor.updateSubscription(sensorList, 13, BSEC_SAMPLE_RATE_LP);
     // VEML7700
     checkSensor(veml.begin(), "VEML7700");
