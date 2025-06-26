@@ -1010,7 +1010,7 @@ void setup() {
         delay(1000);
     }
     // BME680
-    iaqSensor.begin(BME68X_I2C_ADDR_HIGH, Wire);
+    iaqSensor.begin(BME68X_I2C_ADDR_HIGH, Wire); // BME68X_I2C_ADDR_HIGH(default) = 0x77, BME68X_I2C_ADDR_LOW = 0x76
     iaqSensor.updateSubscription(sensorList, 13, BSEC_SAMPLE_RATE_LP);
     // VEML7700
     checkSensor(veml.begin(), "VEML7700");
