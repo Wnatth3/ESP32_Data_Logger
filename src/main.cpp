@@ -474,13 +474,11 @@ String strTime(DateTime t) {
 // Set the time to 0, 15, 30, 45 min
 uint8_t setMinMatch(uint8_t a) {
     if (a >= 0 && a <= 59) {
-#ifdef _5Min
+#if defined(_5Min)
         return ((a / 5) + 1) * 5 % 60;
-#endif
-#ifdef _10Min
+#elif defined(_10Min)
         return ((a / 10) + 1) * 10 % 60;
-#endif
-#ifdef _15Min
+#elif defined(_15Min)
         return ((a / 15) + 1) * 15 % 60;
 #endif
     }
@@ -891,13 +889,11 @@ void IRAM_ATTR fetchData() {
 
 #else
 
-#ifdef _5Min
+#if defined(_5Min)
     _deF("5min Match: ");
-#endif
-#ifdef _10Min
+#elif defined(_10Min)
     _deF("10min Match: ");
-#endif
-#ifdef _15Min
+#elif defined(_15Min)
     _deF("15min Match: ");
 #endif
 
