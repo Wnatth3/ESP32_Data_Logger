@@ -429,8 +429,7 @@ void otaWebUpdateSetup() {
         []() {
             server.sendHeader("Connection", "close");
             server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
-            ESP.restart();
-        },
+            ESP.restart(); },
         []() {
             HTTPUpload& upload = server.upload();
             if (upload.status == UPLOAD_FILE_START) {
@@ -450,8 +449,7 @@ void otaWebUpdateSetup() {
                 } else {
                     Update.printError(Serial);
                 }
-            }
-        });
+            } });
 
     // Reset route handler
     server.on("/reset", HTTP_POST, []() {
@@ -991,11 +989,11 @@ void setup() {
         delay(1000);
     }
     // BME680
-    iaqSensor.begin(BME68X_I2C_ADDR_HIGH, Wire); // BME68X_I2C_ADDR_HIGH(default) = 0x77, BME68X_I2C_ADDR_LOW = 0x76
+    iaqSensor.begin(BME68X_I2C_ADDR_HIGH, Wire);  // BME68X_I2C_ADDR_HIGH(default) = 0x77, BME68X_I2C_ADDR_LOW = 0x76
     iaqSensor.updateSubscription(sensorList, 13, BSEC_SAMPLE_RATE_LP);
     // VEML7700
     if (!veml.begin()) _delnF("VEML7700 is not found");
-    
+
     // MH-Z19B
     mySerial.begin(9600, SERIAL_8N1, rxPin2, txPin2);  // (Uno example) device to MH-Z19 serial start
     myMHZ19.begin(mySerial);                           // *Serial(Stream) reference must be passed to library begin().
