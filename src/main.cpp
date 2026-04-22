@@ -17,6 +17,7 @@
 #include <SoftwareSerial.h>
 #include <Wire.h>
 #include <ezLED.h>
+#include <esp_sleep.h>
 // Sensors
 #include "bsec.h"                  // SD0 Pkn connect to GND // BME680 - BSEC Software library
 #include <PMserial.h>              // PMSA003 - PMSerial - https://github.com/avaldebe/PMserial
@@ -34,12 +35,14 @@
 #include <Button2.h>
 
 //******************************** Configulation ****************************//
-// #define _DEBUG_  // Comment this line if you don't want to debug
+#define _DEBUG_  // Comment this line if you don't want to debug
 #include "Debug.h"
 
+#define BATTERY_MODE  // maximize battery life by sleeping between readings
+
 // -- Read Sensores every 5, 10, or 15 minutes -- //
-// #define _20SecTest  // Uncomment this line if you want 20sec Sensors Test
-#define _5Min  // Uncomment this line if you want to read sensors every 5 minutes
+#define _20SecTest  // Uncomment this line if you want 20sec Sensors Test
+// #define _5Min  // Uncomment this line if you want to read sensors every 5 minutes
 // #define _10Min  // Uncomment this line if you want to read sensors every 10 minutes
 // #define _15Min  // Uncomment this line if you want to read sensors every 15 minutes
 
@@ -301,6 +304,65 @@ void deleteFile(fs::FS& fs, const char* path) {
   }
 }
 
+bool connectWiFi() {
+  if (WiFi.status() == WL_CONNECTED) {
+    return true;
+  }
+
+  _delnF("Connecting to WiFi...");
+  if (!wifiManager.autoConnect(deviceName, "password")) {
+    _delnF("WiFi connect failed");
+    return false;
+  }
+
+  _delnF("WiFi connected");
+  return true;
+}
+
+void disconnectWiFi() {
+  if (WiFi.status() == WL_CONNECTED) {
+    if (mqtt.connected()) {
+      mqtt.disconnect();
+    }
+    WiFi.disconnect(true, true);
+  }
+  WiFi.mode(WIFI_OFF);
+  _delnF("WiFi powered off");
+}
+
+bool connectMqttOnce() {
+  if (!mqttParameter) {
+    _delnF("MQTT parameter not available");
+    return false;
+  }
+  if (mqtt.connected()) {
+    return true;
+  }
+
+  _deF("Connecting MQTT...");
+  if (mqtt.connect(deviceName, mqttUser, mqttPass)) {
+    _delnF("connected");
+    return true;
+  }
+
+  _deVar("MQTT connect failed state: ", mqtt.state());
+  _delnF("");
+  return false;
+}
+
+void enterLowPowerSleep() {
+#ifdef BATTERY_MODE
+  _delnF("Entering light sleep until RTC alarm...");
+  disconnectWiFi();
+  statusLed.turnOFF();
+  // esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)SQW_PIN, 0);
+  // esp_light_sleep_start();
+  esp_deep_sleep_start();
+  _delnF("Woke from sleep");
+#endif
+}
+
 void wifiManagerSetup() {
   loadConfiguration(LittleFS, filename);
 #ifdef _DEBUG_
@@ -338,11 +400,13 @@ void wifiManagerSetup() {
   // wifiManager.setMinimumSignalQuality(20); // Default 8%
   // wifiManager.setConfigPortalTimeout(60);
 
+#ifndef BATTERY_MODE
   if (wifiManager.autoConnect(deviceName, "password")) {
     _delnF("WiFI is connected :D");
   } else {
     _delnF("Configportal running");
   }
+#endif
 
   // read updated parameters
   strcpy(mqttBroker, customMqttBroker.getValue());
@@ -873,6 +937,10 @@ void sendData() {
   char jsonBuffer[1100];
   serializeJson(doc, jsonBuffer);
 
+  if (!connectMqttOnce()) {
+    _delnF("MQTT publish skipped");
+    return;
+  }
   mqtt.publish(MQTT_PUB_JSON, jsonBuffer);
 
   // Print the JSON document
@@ -883,15 +951,19 @@ void sendData() {
   _delnF("\nData sending is done.");
 }
 
-void IRAM_ATTR fetchData() {
+void fetchData() {
   setupAlarm();
 
 #ifdef _20SecTest
   readData();
-  sendData();
+  if (connectWiFi()) {
+    sendData();
+    disconnectWiFi();
+  }
 
 #else
 
+  uint8_t nowMin = rtc.now().minute();
 #if defined(_5Min)
   _deF("5min Match: ");
 #elif defined(_10Min)
@@ -900,10 +972,13 @@ void IRAM_ATTR fetchData() {
   _deF("15min Match: ");
 #endif
 
-  _deln(checkMinMatch(tMin) ? "true" : "false");
-  if (checkMinMatch(tMin)) {
+  _deln(checkMinMatch(nowMin) ? "true" : "false");
+  if (checkMinMatch(nowMin)) {
     readData();
-    sendData();
+    if (connectWiFi()) {
+      sendData();
+      disconnectWiFi();
+    }
   } else {
     _delnF("\tread data next time.");
   }
@@ -980,6 +1055,10 @@ void printScd41Config(String prefix) {
 
 //******************************** Setup  ***********************************//
 void setup() {
+#ifdef BATTERY_MODE
+  // reduce active CPU power
+  setCpuFrequencyMhz(80);
+#endif
   _serialBegin(115200);
 
   statusLed.turnOFF();
@@ -1043,12 +1122,16 @@ void setup() {
   dht.begin();
 
   wifiManagerSetup();
+#ifndef BATTERY_MODE
   otaWebUpdateSetup();
+#endif
   syncRtc();
   setupAlarm();
 
   mqttInit();
+#ifndef BATTERY_MODE
   tWifiDisconnectedDetect.start();
+#endif
 #ifndef _20SecTest
   tSgp41HeatingOff.start();
 #endif
@@ -1056,12 +1139,16 @@ void setup() {
 
 //******************************** Loop *************************************//
 void loop() {
+#ifndef BATTERY_MODE
   tWifiDisconnectedDetect.update();
+#endif
   statusLed.loop();  // MUST call the led.loop() function in loop()
   resetWifiBt.loop();
+#ifndef BATTERY_MODE
   server.handleClient();  // OTA Web Update
   tConnectMqtt.update();
   tReconnectMqtt.update();
+#endif
 
 #ifndef _20SecTest
   tSgp41HeatingOn.update();
@@ -1072,4 +1159,9 @@ void loop() {
     rtcTrigger = false;
     fetchData();
   }
+#ifdef BATTERY_MODE
+  else {
+    enterLowPowerSleep();
+  }
+#endif
 }
