@@ -1,0 +1,20 @@
+sstaub/TickTwo@^4.4.0
+boschsensortec/BSEC Software Library@^1.8.1492
+wifwaf/MH-Z19@^1.5.4
+arduinogetstarted/ezLED@^1.0.1
+sensirion/Sensirion I2C SHT4x@^1.1.2
+bblanchon/ArduinoJson@^7.3.1
+adafruit/RTClib@^2.1.1
+knolleary/PubSubClient@^2.8
+arduino-libraries/NTPClient@^3.2.1
+sensirion/Sensirion I2C SCD4x@^1.0.0
+adafruit/DHT sensor library@^1.4.6
+sensirion/Sensirion I2C SGP41@^1.0.0
+lennarthennigs/Button2@^2.3.5
+adafruit/Adafruit AHTX0@^2.0.5
+tzapu/WiFiManager@^2.0.17
+sensirion/Sensirion Gas Index Algorithm@^3.2.3
+adafruit/ENS160 - Adafruit Fork@^3.0.1
+plerup/EspSoftwareSerial@^8.0.1
+avaldebe/PMSerial@^1.2.0
+adafruit/Adafruit VEML7700 Library@^2.1.2
