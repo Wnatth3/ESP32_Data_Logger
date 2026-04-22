@@ -1,0 +1,51 @@
+---
+BasedOnStyle: Google
+
+# ── Indentation ──────────────────────────────────────────────────────────────
+IndentWidth:               2
+ContinuationIndentWidth:   2
+AccessModifierOffset:      -2   # public:/private: at class level, not indented
+NamespaceIndentation:      None
+
+# ── Braces & blocks ──────────────────────────────────────────────────────────
+BreakBeforeBraces:                    Attach
+AllowShortFunctionsOnASingleLine:     InlineOnly   # keep { return _x; } getters on one line
+AllowShortIfStatementsOnASingleLine:  AllIfsAndElse # Never
+AllowShortLoopsOnASingleLine:         true
+AllowShortLambdasOnASingleLine:       All      # keep Task lambdas on one line
+AllowShortCaseLabelsOnASingleLine:    true
+AllowShortBlocksOnASingleLine:        Always
+BreakConstructorInitializers:         BeforeComma
+
+# ── Column limit & line breaking ─────────────────────────────────────────────
+ColumnLimit:                0
+AlwaysBreakAfterReturnType: ExceptShortType
+BinPackParameters:          BinPack   # when params wrap, one per line
+AlignAfterOpenBracket:      true   # wrapped args align under '('
+
+# ── Alignment ────────────────────────────────────────────────────────────────
+AlignConsecutiveAssignments:   Consecutive  # aligns '=' in assignment blocks
+AlignTrailingComments:         true
+AlignOperands:                 Align
+AlignArrayOfStructures:        Right
+
+# ── Spaces ───────────────────────────────────────────────────────────────────
+SpaceBeforeParens:             ControlStatements  # if (...) but not foo()
+SpaceAfterCStyleCast:          false
+SpacesInContainerLiterals:     false
+SpaceBeforeAssignmentOperators: true
+SpaceAfterTemplateKeyword:     false   # std::function<void()>
+
+# ── Includes ─────────────────────────────────────────────────────────────────
+SortIncludes:   false   # preserve manual order: Arduino.h → libs → local
+IncludeBlocks:  Preserve
+
+# ── Pointer & reference alignment ────────────────────────────────────────────
+PointerAlignment:   Left   # const char*
+ReferenceAlignment: Left   # Button2&
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+Cpp11BracedListStyle:  Block
+Standard:              c++17
+UseTab:                Never
+MaxEmptyLinesToKeep:   1
