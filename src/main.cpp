@@ -31,7 +31,7 @@
 #include <Adafruit_AHTX0.h>        // AHT21 - Adafruit AHTX0
 #include <ScioSense_ENS160.h>      // ENS160 - ENS160 Adafruit Fork - https://github.com/adafruit/ENS160_driver
 #include <DHT.h>                   // DHT22 - DHT Sensor library
-#include <TickTwo.h>
+#include <TaskScheduler.h>
 #include <Button2.h>
 
 //******************************** Configulation ****************************//
@@ -76,11 +76,6 @@ bool mqttParameter;
 bool shouldSaveConfig = false;  // flag for saving data
 
 WiFiManager wifiManager;
-
-// //----------------- OTA Web Update ------------//
-#include "Ota.h"
-
-WebServer server(80);
 
 //*---------------- PubSubClient -------------//
 #define MQTT_PUB_JSON "esp32/sensors/json"
@@ -206,18 +201,20 @@ float humiDht22;
 DHT dht(DHTPIN, DHTTYPE);
 
 //******************************** Tasks ************************************//
+Scheduler ts;
+
 void sgp41HeatingOn();
 void sgp41HeatingOff();
-TickTwo tSgp41HeatingOn(sgp41HeatingOn, 500, 0, MILLIS);  // (function, interval, iteration, interval unit)
-TickTwo tSgp41HeatingOff(sgp41HeatingOff, 0, 0, MILLIS);  // (function, interval, iteration, interval unit)
+Task tSgp41HeatingOn(500, TASK_FOREVER, &sgp41HeatingOn, &ts, false);  // (interval, iteration, function)
+Task tSgp41HeatingOff(0, TASK_FOREVER, &sgp41HeatingOff, &ts, false);  // (interval, iteration, function)
 
 void wifiDisconnectedDetect();
-TickTwo tWifiDisconnectedDetect(wifiDisconnectedDetect, 60000, 0, MILLIS);  // Every 1 minutes
+Task tWifiDisconnectedDetect(600000, TASK_FOREVER, &wifiDisconnectedDetect, &ts, false);  // Every 1 minutes
 
 void connectMqtt();
 void reconnectMqtt();
-TickTwo tConnectMqtt(connectMqtt, 0, 0, MILLIS);  // (function, interval, iteration, interval unit)
-TickTwo tReconnectMqtt(reconnectMqtt, 3000, 0, MILLIS);
+Task tConnectMqtt(0, TASK_FOREVER, &connectMqtt, &ts, false);
+Task tReconnectMqtt(3000, TASK_FOREVER, &reconnectMqtt, &ts, false);
 
 //******************************** Functions ********************************//
 //----------------- WiFi Manager --------------//
@@ -263,7 +260,7 @@ void mqttInit() {
     _delnF(" available");
     mqtt.setBufferSize(1024);  // Max buffer size = 1024 bytes (default: 256 bytes)
     mqtt.setServer(mqttBroker, atoi(mqttPort));
-    tConnectMqtt.start();
+    tConnectMqtt.enable();
   } else {
     _delnF(" not available.");
   }
@@ -468,64 +465,6 @@ void resetWifiBtPressed(Button2& btn) {
   ESP.restart();
 }
 
-//----------------- OTA Web Updater -----------//
-void otaWebUpdateSetup() {
-  // const char* host = "ESP32";
-  /*use mdns for host name resolution*/
-  if (!MDNS.begin(deviceName)) {  // http://deviceName.local
-    _delnF("Error setting up MDNS responder!");
-    while (1) {
-      delay(500);  // Default is 1000
-    }
-  }
-  _delnF("mDNS responder started");
-  /*return index page which is stored in ud */
-  server.on("/", HTTP_GET, []() {
-    server.sendHeader("Connection", "close");
-    server.send(200, "text/html", loginIndex);
-  });
-  server.on("/ud", HTTP_GET, []() {
-    server.sendHeader("Connection", "close");
-    server.send(200, "text/html", ud);
-  });
-  /*handling uploading firmware file */
-  server.on(
-    "/update", HTTP_POST,
-    []() {
-            server.sendHeader("Connection", "close");
-            server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
-            ESP.restart(); },
-    []() {
-            HTTPUpload& upload = server.upload();
-            if (upload.status == UPLOAD_FILE_START) {
-                _deVarln("Update: ", upload.filename);
-                if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {  // start with max available size
-                    Update.printError(Serial);
-                }
-            } else if (upload.status == UPLOAD_FILE_WRITE) {
-                /* flashing firmware to ESP*/
-                if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-                    Update.printError(Serial);
-                }
-            } else if (upload.status == UPLOAD_FILE_END) {
-                if (Update.end(true)) {  // true to set the size to the current progress
-                    _deVarln("Update Success: ", upload.totalSize);
-                    _delnF(" Rebooting...");
-                } else {
-                    Update.printError(Serial);
-                }
-            } });
-
-  // Reset route handler
-  server.on("/reset", HTTP_POST, []() {
-    server.send(200, "text/plain", "ESP32 is restarting...");
-    ESP.restart();  // Restart ESP32
-  });
-
-  server.begin();
-
-  _delnF("\tOTA Web updater setting is done.");
-}
 //----------------- Time Setup ----------------//
 String strTime(DateTime t) {
   char buff[] = "YYYY MMM DD (DDD) hh:mm:ss";
@@ -731,27 +670,27 @@ void readSht40Sgp41() {
 }
 
 void sgp41HeatingOn() {
-  if (tSgp41HeatingOn.counter() == 1) {
+  if (tSgp41HeatingOn.getIterations() == 1) {
     _delnF("sgp41HeatingOn: First Time");
   }
 
   readSht40Sgp41();
   uint8_t now = rtc.now().minute();
   if (now == setMin) {
-    tSgp41HeatingOn.stop();
-    tSgp41HeatingOff.start();
+    tSgp41HeatingOn.disable();
+    tSgp41HeatingOff.enable();
   }
 }
 
 void sgp41HeatingOff() {
-  if (tSgp41HeatingOff.counter() == 1) {
+  if (tSgp41HeatingOff.getIterations() == 1) {
     _delnF("sgp41HeatingOff: First Time");
   }
 
   uint8_t now = rtc.now().minute();
   if (now == preheatTime) {
-    tSgp41HeatingOff.stop();
-    tSgp41HeatingOn.start();
+    tSgp41HeatingOff.disable();
+    tSgp41HeatingOn.enable();
   }
 }
 
@@ -1002,22 +941,22 @@ void reconnectMqtt() {
     _deVarln(" | Pass: ", mqttPass);
     _deF("Connecting MQTT... ");
     if (mqtt.connect(deviceName, mqttUser, mqttPass)) {
-      tReconnectMqtt.stop();
+      tReconnectMqtt.disable();
       _delnF("connected");
-      tConnectMqtt.interval(0);
-      tConnectMqtt.start();
+      tConnectMqtt.setInterval(0);
+      tConnectMqtt.enable();
       statusLed.blinkNumberOfTimes(300, 300, 3);  // 250ms ON, 750ms OFF, repeat 3 times, blink immediately
     } else {
       _deVar("failed state: ", mqtt.state());
-      _deVarln(" | counter: ", tReconnectMqtt.counter());
-      if (tReconnectMqtt.counter() >= 3) {
-        tReconnectMqtt.stop();
-        tConnectMqtt.interval(60 * 1000);  // 300 sec. = 5 min.Wait 5 minute before reconnecting.
-        tConnectMqtt.start();
+      _deVarln(" | counter: ", tReconnectMqtt.getIterations());
+      if (tReconnectMqtt.getIterations() >= 3) {
+        tReconnectMqtt.disable();
+        tConnectMqtt.setInterval(60 * 1000);  // 300 sec. = 5 min.Wait 5 minute before reconnecting.
+        tConnectMqtt.enable();
       }
     }
   } else {
-    if (tReconnectMqtt.counter() <= 1) {
+    if (tReconnectMqtt.getIterations() <= 1) {
       _delnF("WiFi is not connected");
     }
   }
@@ -1025,8 +964,8 @@ void reconnectMqtt() {
 
 void connectMqtt() {
   if (!mqtt.connected()) {
-    tConnectMqtt.stop();
-    tReconnectMqtt.start();
+    tConnectMqtt.disable();
+    tReconnectMqtt.enable();
   } else {
     mqtt.loop();
   }
@@ -1130,30 +1069,19 @@ void setup() {
 
   mqttInit();
 #ifndef BATTERY_MODE
-  tWifiDisconnectedDetect.start();
+  tWifiDisconnectedDetect.enable();
+  tConnectMqtt.enable();
 #endif
 #ifndef _20SecTest
-  tSgp41HeatingOff.start();
+  tSgp41HeatingOff.enable();
 #endif
 }
 
 //******************************** Loop *************************************//
 void loop() {
-#ifndef BATTERY_MODE
-  tWifiDisconnectedDetect.update();
-#endif
+  ts.execute(); 
   statusLed.loop();  // MUST call the led.loop() function in loop()
   resetWifiBt.loop();
-#ifndef BATTERY_MODE
-  server.handleClient();  // OTA Web Update
-  tConnectMqtt.update();
-  tReconnectMqtt.update();
-#endif
-
-#ifndef _20SecTest
-  tSgp41HeatingOn.update();
-  tSgp41HeatingOff.update();
-#endif
 
   if (rtcTrigger) {
     rtcTrigger = false;
