@@ -4,11 +4,6 @@
 #include <ArduinoJson.h>
 #include <WiFiManager.h>
 #include <PubSubClient.h>
-// OTA
-#include <ESPmDNS.h>
-#include <Update.h>
-#include <WebServer.h>
-#include <WiFiClient.h>
 // NTP
 #include <NTPClient.h>
 #include <WiFiUdp.h>
@@ -60,8 +55,8 @@ SensorDHT22 dht22;  // pin=32 (default matches wiring)
 ezLED statusLed(led);
 
 //----------------- Reset WiFi Button -------------//
-#define resetWifiBtPin 0
-Button2 resetWifiBt;
+// #define resetWifiBtPin 0
+// Button2 resetWifiBt;
 
 //----------------- WiFi Manager ------------------//
 const char* filename = "/config.txt";
@@ -103,10 +98,10 @@ volatile bool rtcTrigger = false;
 //******************************** Tasks ************************************//
 Scheduler ts;
 
-void sgp41HeatingOn();
-void sgp41HeatingOff();
-Task tSgp41HeatingOn(500, TASK_FOREVER, &sgp41HeatingOn, &ts, false);
-Task tSgp41HeatingOff(0, TASK_FOREVER, &sgp41HeatingOff, &ts, false);
+// void sgp41HeatingOn();
+// void sgp41HeatingOff();
+// Task tSgp41HeatingOn(500, TASK_FOREVER, &sgp41HeatingOn, &ts, false);
+// Task tSgp41HeatingOff(0, TASK_FOREVER, &sgp41HeatingOff, &ts, false);
 
 void wifiDisconnectedDetect();
 Task tWifiDisconnectedDetect(600000, TASK_FOREVER, &wifiDisconnectedDetect, &ts, false);
@@ -307,16 +302,16 @@ void wifiManagerSetup() {
   _deVarln(" | dns: ", WiFi.dnsIP());
 }
 
-void resetWifiBtPressed(Button2& btn) {
-  statusLed.turnON();
-  _delnF("Deleting the config file and resetting WiFi.");
-  deleteFile(LittleFS, filename);
-  wifiManager.resetSettings();
-  _deF(deviceName);
-  _delnF(" is restarting.");
-  delay(3000);
-  ESP.restart();
-}
+// void resetWifiBtPressed(Button2& btn) {
+//   statusLed.turnON();
+//   _delnF("Deleting the config file and resetting WiFi.");
+//   deleteFile(LittleFS, filename);
+//   wifiManager.resetSettings();
+//   _deF(deviceName);
+//   _delnF(" is restarting.");
+//   delay(3000);
+//   ESP.restart();
+// }
 
 //----------------- RTC / Time ----------------//
 String strTime(DateTime t) {
@@ -399,22 +394,22 @@ bool checkMinMatch(int tMin) {
 #endif
 
 //----------------- SGP41 Preheat Tasks -------//
-void sgp41HeatingOn() {
-  if (tSgp41HeatingOn.getIterations() == 1) _delnF("sgp41HeatingOn: First Time");
-  sht40sgp41.read();
-  if (rtc.now().minute() == setMin) {
-    tSgp41HeatingOn.disable();
-    tSgp41HeatingOff.enable();
-  }
-}
+// void sgp41HeatingOn() {
+//   if (tSgp41HeatingOn.getIterations() == 1) _delnF("sgp41HeatingOn: First Time");
+//   sht40sgp41.read();
+//   if (rtc.now().minute() == setMin) {
+//     tSgp41HeatingOn.disable();
+//     tSgp41HeatingOff.enable();
+//   }
+// }
 
-void sgp41HeatingOff() {
-  if (tSgp41HeatingOff.getIterations() == 1) _delnF("sgp41HeatingOff: First Time");
-  if (rtc.now().minute() == preheatTime) {
-    tSgp41HeatingOff.disable();
-    tSgp41HeatingOn.enable();
-  }
-}
+// void sgp41HeatingOff() {
+//   if (tSgp41HeatingOff.getIterations() == 1) _delnF("sgp41HeatingOff: First Time");
+//   if (rtc.now().minute() == preheatTime) {
+//     tSgp41HeatingOff.disable();
+//     tSgp41HeatingOn.enable();
+//   }
+// }
 
 //----------------- MQTT Tasks ----------------//
 void wifiDisconnectedDetect() {
@@ -556,9 +551,9 @@ void setup() {
   pinMode(SQW_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(SQW_PIN), onRtcTrigger, FALLING);
 
-  resetWifiBt.begin(resetWifiBtPin);
-  resetWifiBt.setLongClickTime(5000);
-  resetWifiBt.setLongClickDetectedHandler(resetWifiBtPressed);
+  // resetWifiBt.begin(resetWifiBtPin);
+  // resetWifiBt.setLongClickTime(5000);
+  // resetWifiBt.setLongClickDetectedHandler(resetWifiBtPressed);
 
   while (!LittleFS.begin(true)) {
     _delnF("Failed to initialize LittleFS");
@@ -576,27 +571,23 @@ void setup() {
   dht22.begin();
 
   wifiManagerSetup();
-#ifndef BATTERY_MODE
-  otaWebUpdateSetup();
-#endif
   syncRtc();
   setupAlarm();
   mqttInit();
 
 #ifndef BATTERY_MODE
   tWifiDisconnectedDetect.enable();
-  tConnectMqtt.enable();
 #endif
-#ifndef _20SecTest
-  tSgp41HeatingOff.enable();
-#endif
+// #ifndef _20SecTest
+//   tSgp41HeatingOff.enable();
+// #endif
 }
 
 //******************************** Loop *************************************//
 void loop() {
   ts.execute();
   statusLed.loop();
-  resetWifiBt.loop();
+  // resetWifiBt.loop();
 
   if (rtcTrigger) {
     rtcTrigger = false;
