@@ -10,6 +10,9 @@
 
 class SensorSCD41 {
 public:
+    static constexpr float    TEMP_OFFSET_C    = 3.5f;   // Calibrated offset
+    static constexpr uint16_t SITE_ALTITUDE_M  = 310;    // Site elevation in meters
+
     float    temp = 0;
     float    humi = 0;
     uint16_t co2  = 0;
@@ -19,25 +22,23 @@ public:
         _scd41.wakeUp();
         _scd41.stopPeriodicMeasurement();
         _scd41.reinit();
-        _scd41.setTemperatureOffset(3.5f);  // Sweet spot: 3.5 C
-        _scd41.setSensorAltitude(310);
+        _scd41.setTemperatureOffset(TEMP_OFFSET_C);
+        _scd41.setSensorAltitude(SITE_ALTITUDE_M);
         _scd41.persistSettings();
         _scd41.startPeriodicMeasurement();
     }
 
-    void read() {
+    // Returns true when a fresh reading was captured.
+    // Returns false if data is not yet ready or on error — caller should retry later.
+    bool read() {
         bool dataReady = false;
         _error = _scd41.getDataReadyStatus(dataReady);
-        if (_error != NO_ERROR) { _printError("getDataReadyStatus"); return; }
-
-        while (!dataReady) {
-            delay(100);
-            _error = _scd41.getDataReadyStatus(dataReady);
-            if (_error != NO_ERROR) { _printError("getDataReadyStatus"); return; }
-        }
+        if (_error != NO_ERROR) { _printError("getDataReadyStatus"); return false; }
+        if (!dataReady) return false;
 
         _error = _scd41.readMeasurement(co2, temp, humi);
-        if (_error != NO_ERROR) { _printError("readMeasurement"); }
+        if (_error != NO_ERROR) { _printError("readMeasurement"); return false; }
+        return true;
     }
 
     void print() {
