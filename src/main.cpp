@@ -18,18 +18,18 @@
 #include <Wire.h>
 #include <ezLED.h>
 // Sensors
-#include "bsec.h"                  // SD0 Pkn connect to GND // BME680 - BSEC Software library
-#include <PMserial.h>              // PMSA003 - PMSerial - https://github.com/avaldebe/PMserial
-#include "Adafruit_VEML7700.h"     // VEML7700 - Adafruit VEML7700
-#include "MHZ19.h"                 // MH-Z19B - MH-Z19 - https://github.com/WifWaf/MH-Z19
+#include "bsec.h"  // SD0 Pkn connect to GND // BME680 - BSEC Software library
+#include <PMserial.h>  // PMSA003 - PMSerial - https://github.com/avaldebe/PMserial
+#include "Adafruit_VEML7700.h"  // VEML7700 - Adafruit VEML7700
+#include "MHZ19.h"  // MH-Z19B - MH-Z19 - https://github.com/WifWaf/MH-Z19
 #include <SensirionI2cScd4x.h>     // SCD4x - Sensirion I2C SCD4x
 #include <SensirionI2CSgp41.h>     // SGP41 - Sensirion I2C SGP41
 #include <SensirionI2cSht4x.h>     // SHT40 - Sensirion I2C SHT4x
 #include <VOCGasIndexAlgorithm.h>  // SGP41 - Sensirian Gas Index Algorithm
 #include <NOxGasIndexAlgorithm.h>  // SGP41 - Sensirian Gas Index Algorithm
 #include <Adafruit_AHTX0.h>        // AHT21 - Adafruit AHTX0
-#include <ScioSense_ENS160.h>      // ENS160 - ENS160 Adafruit Fork - https://github.com/adafruit/ENS160_driver
-#include <DHT.h>                   // DHT22 - DHT Sensor library
+#include <ScioSense_ENS160.h>  // ENS160 - ENS160 Adafruit Fork - https://github.com/adafruit/ENS160_driver
+#include <DHT.h>  // DHT22 - DHT Sensor library
 #include <TickTwo.h>
 #include <Button2.h>
 
@@ -39,9 +39,11 @@
 
 // -- Read Sensores every 5, 10, or 15 minutes -- //
 // #define _20SecTest  // Uncomment this line if you want 20sec Sensors Test
-#define _5Min  // Uncomment this line if you want to read sensors every 5 minutes
-// #define _10Min  // Uncomment this line if you want to read sensors every 10 minutes
-// #define _15Min  // Uncomment this line if you want to read sensors every 15 minutes
+#define _5Min  // Uncomment this line if you want to read sensors every 5
+               // minutes
+// #define _10Min  // Uncomment this line if you want to read sensors every 10
+// minutes #define _15Min  // Uncomment this line if you want to read sensors
+// every 15 minutes
 
 //******************************** Variables & Objects **********************//
 #define deviceName "WeatherSt"
@@ -58,13 +60,13 @@ Button2 resetWifiBt;
 const char* filename = "/config.txt";  // Config file name
 
 // default custom static IP
-char static_ip[16]  = "192.168.0.191";
-char static_gw[16]  = "192.168.0.1";
-char static_sn[16]  = "255.255.255.0";
+char static_ip[16] = "192.168.0.191";
+char static_gw[16] = "192.168.0.1";
+char static_sn[16] = "255.255.255.0";
 char static_dns[16] = "1.1.1.1";
 // MQTT
 char mqttBroker[16] = "192.168.0.10";
-char mqttPort[6]    = "1883";
+char mqttPort[6] = "1883";
 char mqttUser[16];  // = "admin";
 char mqttPass[16];  // = "admin";
 
@@ -88,7 +90,8 @@ PubSubClient mqtt(mqttClient);
 //----------------- Time Setup ----------------//
 // Sync Time with NTP Server
 WiFiUDP ntpUDP;
-// NTPClient timeClient(ntpUDP, "NTP Server Name", offset time(ms), update Interval(ms));
+// NTPClient timeClient(ntpUDP, "NTP Server Name", offset time(ms), update
+// Interval(ms));
 NTPClient timeClient(ntpUDP, "time.google.com", 25200 /*GMT +7*/);
 // NTPClient timeClient(ntpUDP, "time.facebook.com", 25200 /*GMT +7*/);
 // NTPClient timeClient(ntpUDP, "time.apple.com", 25200 /*GMT +7*/);
@@ -138,7 +141,8 @@ Adafruit_VEML7700 veml = Adafruit_VEML7700();
 int co2;
 MHZ19 myMHZ19;  // Constructor for library
 
-HardwareSerial mySerial(2);  // On ESP32 we do not require the SoftwareSerial library, since we have 2 USARTS available
+HardwareSerial mySerial(2);  // On ESP32 we do not require the SoftwareSerial
+                             // library, since we have 2 USARTS available
 
 // PMSA003A
 #define pmsRX 18  // 18 <-> tx myPMS
@@ -205,15 +209,21 @@ DHT dht(DHTPIN, DHTTYPE);
 //******************************** Tasks ************************************//
 void sgp41HeatingOn();
 void sgp41HeatingOff();
-TickTwo tSgp41HeatingOn(sgp41HeatingOn, 500, 0, MILLIS);  // (function, interval, iteration, interval unit)
-TickTwo tSgp41HeatingOff(sgp41HeatingOff, 0, 0, MILLIS);  // (function, interval, iteration, interval unit)
+TickTwo tSgp41HeatingOn(
+  sgp41HeatingOn, 500, 0,
+  MILLIS);  // (function, interval, iteration, interval unit)
+TickTwo tSgp41HeatingOff(
+  sgp41HeatingOff, 0, 0,
+  MILLIS);  // (function, interval, iteration, interval unit)
 
 void wifiDisconnectedDetect();
-TickTwo tWifiDisconnectedDetect(wifiDisconnectedDetect, 60000, 0, MILLIS);  // Every 1 minutes
+TickTwo tWifiDisconnectedDetect(wifiDisconnectedDetect, 60000, 0,
+                                MILLIS);  // Every 1 minutes
 
 void connectMqtt();
 void reconnectMqtt();
-TickTwo tConnectMqtt(connectMqtt, 0, 0, MILLIS);  // (function, interval, iteration, interval unit)
+TickTwo tConnectMqtt(connectMqtt, 0, 0,
+                     MILLIS);  // (function, interval, iteration, interval unit)
 TickTwo tReconnectMqtt(reconnectMqtt, 3000, 0, MILLIS);
 
 //******************************** Functions ********************************//
@@ -231,11 +241,10 @@ void loadConfiguration(fs::FS& fs, const char* filename) {
   JsonDocument doc;
   // Deserialize the JSON document
   DeserializationError error = deserializeJson(doc, file);
-  if (error) {
-    _delnF("Failed to read file, using default configuration");
-  }
+  if (error) { _delnF("Failed to read file, using default configuration"); }
   // Copy values from the JsonDocument to the Config
-  // strlcpy(Destination_Variable, doc["Source_Variable"] /*| "Default_Value"*/, sizeof(Destination_Name));
+  // strlcpy(Destination_Variable, doc["Source_Variable"] /*| "Default_Value"*/,
+  // sizeof(Destination_Name));
   strlcpy(mqttBroker, doc["mqttBroker"], sizeof(mqttBroker));
   strlcpy(mqttPort, doc["mqttPort"], sizeof(mqttPort));
   strlcpy(mqttUser, doc["mqttUser"], sizeof(mqttUser));
@@ -258,7 +267,8 @@ void mqttInit() {
   _deF("MQTT parameters are ");
   if (mqttParameter) {
     _delnF(" available");
-    mqtt.setBufferSize(1024);  // Max buffer size = 1024 bytes (default: 256 bytes)
+    mqtt.setBufferSize(
+      1024);  // Max buffer size = 1024 bytes (default: 256 bytes)
     mqtt.setServer(mqttBroker, atoi(mqttPort));
     tConnectMqtt.start();
   } else {
@@ -281,9 +291,7 @@ void printFile(fs::FS& fs, const char* filename) {
 
   JsonDocument doc;
   DeserializationError error = deserializeJson(doc, file);
-  if (error) {
-    _delnF("Failed to read file");
-  }
+  if (error) { _delnF("Failed to read file"); }
 
   char buffer[512];
   serializeJsonPretty(doc, buffer);
@@ -307,7 +315,8 @@ void wifiManagerSetup() {
   printFile(LittleFS, filename);
 #endif
   // Don't move this block code, it is important for the blocking WiFiManager.
-  WiFiManagerParameter customMqttBroker("broker", "mqtt server", mqttBroker, 16);
+  WiFiManagerParameter customMqttBroker("broker", "mqtt server", mqttBroker,
+                                        16);
   WiFiManagerParameter customMqttPort("port", "mqtt port", mqttPort, 6);
   WiFiManagerParameter customMqttUser("user", "mqtt user", mqttUser, 10);
   WiFiManagerParameter customMqttPass("pass", "mqtt pass", mqttPass, 10);
@@ -362,19 +371,19 @@ void wifiManagerSetup() {
     JsonDocument doc;
     // Set the values in the document
     doc["mqttBroker"] = mqttBroker;
-    doc["mqttPort"]   = mqttPort;
-    doc["mqttUser"]   = mqttUser;
-    doc["mqttPass"]   = mqttPass;
+    doc["mqttPort"] = mqttPort;
+    doc["mqttUser"] = mqttUser;
+    doc["mqttPass"] = mqttPass;
 
     if (doc["mqttBroker"] != "") {
       doc["mqttParameter"] = true;
-      mqttParameter        = doc["mqttParameter"];
+      mqttParameter = doc["mqttParameter"];
     }
 
-    doc["ip"]      = WiFi.localIP().toString();
+    doc["ip"] = WiFi.localIP().toString();
     doc["gateway"] = WiFi.gatewayIP().toString();
-    doc["subnet"]  = WiFi.subnetMask().toString();
-    doc["dns"]     = WiFi.dnsIP().toString();
+    doc["subnet"] = WiFi.subnetMask().toString();
+    doc["dns"] = WiFi.dnsIP().toString();
 
     // Serialize JSON to file
     if (serializeJson(doc, file) == 0) {
@@ -428,29 +437,33 @@ void otaWebUpdateSetup() {
   server.on(
     "/update", HTTP_POST,
     []() {
-            server.sendHeader("Connection", "close");
-            server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
-            ESP.restart(); },
+      server.sendHeader("Connection", "close");
+      server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
+      ESP.restart();
+    },
     []() {
-            HTTPUpload& upload = server.upload();
-            if (upload.status == UPLOAD_FILE_START) {
-                _deVarln("Update: ", upload.filename);
-                if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {  // start with max available size
-                    Update.printError(Serial);
-                }
-            } else if (upload.status == UPLOAD_FILE_WRITE) {
-                /* flashing firmware to ESP*/
-                if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-                    Update.printError(Serial);
-                }
-            } else if (upload.status == UPLOAD_FILE_END) {
-                if (Update.end(true)) {  // true to set the size to the current progress
-                    _deVarln("Update Success: ", upload.totalSize);
-                    _delnF(" Rebooting...");
-                } else {
-                    Update.printError(Serial);
-                }
-            } });
+      HTTPUpload& upload = server.upload();
+      if (upload.status == UPLOAD_FILE_START) {
+        _deVarln("Update: ", upload.filename);
+        if (!Update.begin(
+              UPDATE_SIZE_UNKNOWN)) {  // start with max available size
+          Update.printError(Serial);
+        }
+      } else if (upload.status == UPLOAD_FILE_WRITE) {
+        /* flashing firmware to ESP*/
+        if (Update.write(upload.buf, upload.currentSize) !=
+            upload.currentSize) {
+          Update.printError(Serial);
+        }
+      } else if (upload.status == UPLOAD_FILE_END) {
+        if (Update.end(true)) {  // true to set the size to the current progress
+          _deVarln("Update Success: ", upload.totalSize);
+          _delnF(" Rebooting...");
+        } else {
+          Update.printError(Serial);
+        }
+      }
+    });
 
   // Reset route handler
   server.on("/reset", HTTP_POST, []() {
@@ -515,19 +528,22 @@ void setupAlarm() {
   // }
 
   if (rtc.lostPower()) {
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  // this will adjust to the date and time at compilation
+    rtc.adjust(DateTime(
+      F(__DATE__),
+      F(__TIME__)));  // this will adjust to the date and time at compilation
   }
 
-  // syncRtc();  // Sync RTC with NTP server. The internet connection is required.
-  // January 21, 2014 at 3am you would call:
-  // rtc.adjust(DateTime(2023, 12, 9, 21, 59, 35));  // Manually set time
+  // syncRtc();  // Sync RTC with NTP server. The internet connection is
+  // required. January 21, 2014 at 3am you would call: rtc.adjust(DateTime(2023,
+  // 12, 9, 21, 59, 35));  // Manually set time
 
   _deln("\n\t" + strTime(rtc.now()));
 
   rtc.disable32K();  // we don't need the 32K Pin, so disable it
   rtc.clearAlarm(1);
   rtc.clearAlarm(2);
-  rtc.writeSqwPinMode(DS3231_OFF);  // stop oscillating signals at SQW Pin, otherwise setAlarm1 will fail
+  rtc.writeSqwPinMode(DS3231_OFF);  // stop oscillating signals at SQW Pin,
+                                    // otherwise setAlarm1 will fail
   rtc.disableAlarm(2);
 
 #ifdef _20SecTest
@@ -542,7 +558,7 @@ void setupAlarm() {
 
   _deln("tMin: " + String(tMin));
   // uint8_t setMin = setMinMatch(tMin);
-  setMin      = setMinMatch(tMin);
+  setMin = setMinMatch(tMin);
   preheatTime = setMin == 0 ? 58 : setMin - 2;
   rtc.setAlarm1(DateTime(2023, 2, 18, 0, setMin, 0), DS3231_A1_Minute);
   // rtc.setAlarm1(DateTime(2023, 2, 18, 0, 0, 0), DS3231_A1_Minute);
@@ -612,14 +628,14 @@ void readScd41() {
 }
 
 void readSht40Sgp41() {
-  humiSht40                      = 0;  // %RH
-  tempSht40                      = 0;  // degreeC
-  uint16_t srawVoc               = 0;
-  uint16_t srawNox               = 0;
+  humiSht40 = 0;  // %RH
+  tempSht40 = 0;  // degreeC
+  uint16_t srawVoc = 0;
+  uint16_t srawNox = 0;
   uint16_t defaultCompenstaionRh = 0x8000;  // in ticks as defined by SGP41
-  uint16_t defaultCompenstaionT  = 0x6666;  // in ticks as defined by SGP41
-  uint16_t compensationRh        = 0;       // in ticks as defined by SGP41
-  uint16_t compensationT         = 0;       // in ticks as defined by SGP41
+  uint16_t defaultCompenstaionT = 0x6666;   // in ticks as defined by SGP41
+  uint16_t compensationRh = 0;              // in ticks as defined by SGP41
+  uint16_t compensationT = 0;               // in ticks as defined by SGP41
 
   // 1. Sleep: Measure every second (1Hz), as defined by the Gas Index
   // Algorithm
@@ -630,27 +646,32 @@ void readSht40Sgp41() {
   sgp41Error = sht40.measureHighPrecision(tempSht40, humiSht40);
   if (sgp41Error) {
     errorToString(sgp41Error, sgp41ErrorMessage, 256);
-    _deVarln("SHT4x - Error trying to execute measureHighPrecision(): ", sgp41ErrorMessage);
-    _delnF("Fallback to use default values for humidity and temperature compensation for SGP41");
+    _deVarln("SHT4x - Error trying to execute measureHighPrecision(): ",
+             sgp41ErrorMessage);
+    _delnF(
+      "Fallback to use default values for humidity and temperature "
+      "compensation for SGP41");
     compensationRh = defaultCompenstaionRh;
-    compensationT  = defaultCompenstaionT;
+    compensationT = defaultCompenstaionT;
   } else {
     // convert temperature and humidity to ticks as defined by SGP41
     // interface
     // NOTE: in case you read RH and T raw signals check out the
     // ticks specification in the datasheet, as they can be different for
     // different sensors
-    compensationT  = static_cast<uint16_t>((tempSht40 + 45) * 65535 / 175);
+    compensationT = static_cast<uint16_t>((tempSht40 + 45) * 65535 / 175);
     compensationRh = static_cast<uint16_t>(humiSht40 * 65535 / 100);
   }
 
   // 3. Measure SGP4x signals
   if (conditioning_s > 0) {
     // During NOx conditioning (10s) SRAW NOx will remain 0
-    sgp41Error = sgp41.executeConditioning(compensationRh, compensationT, srawVoc);
+    sgp41Error =
+      sgp41.executeConditioning(compensationRh, compensationT, srawVoc);
     conditioning_s--;
   } else {
-    sgp41Error = sgp41.measureRawSignals(compensationRh, compensationT, srawVoc, srawNox);
+    sgp41Error =
+      sgp41.measureRawSignals(compensationRh, compensationT, srawVoc, srawNox);
   }
 
   // 4. Process raw signals by Gas Index Algorithm to get the VOC and NOx
@@ -667,9 +688,7 @@ void readSht40Sgp41() {
 }
 
 void sgp41HeatingOn() {
-  if (tSgp41HeatingOn.counter() == 1) {
-    _delnF("sgp41HeatingOn: First Time");
-  }
+  if (tSgp41HeatingOn.counter() == 1) { _delnF("sgp41HeatingOn: First Time"); }
 
   readSht40Sgp41();
   uint8_t now = rtc.now().minute();
@@ -694,7 +713,9 @@ void sgp41HeatingOff() {
 void readEns160Aht21() {
   // AHT21
   sensors_event_t humiEvent, tempEvent;
-  aht21.getEvent(&humiEvent, &tempEvent);  // populate temp and humidity objects with fresh data
+  aht21.getEvent(
+    &humiEvent,
+    &tempEvent);  // populate temp and humidity objects with fresh data
 
   tempAht21 = tempEvent.temperature;
   humiAht21 = humiEvent.relative_humidity;
@@ -703,16 +724,16 @@ void readEns160Aht21() {
   ens160.measure(true);
   ens160.measureRaw(true);
 
-  aqiEns160  = ens160.getAQI();
+  aqiEns160 = ens160.getAQI();
   tvocEns160 = ens160.getTVOC();
   eco2Ens160 = ens160.geteCO2();
 }
 
 void readData() {
   if (iaqSensor.run()) {
-    tempBme680   = iaqSensor.temperature;
-    humiBme680   = iaqSensor.humidity;
-    pressBme680  = iaqSensor.pressure / 100.f;
+    tempBme680 = iaqSensor.temperature;
+    humiBme680 = iaqSensor.humidity;
+    pressBme680 = iaqSensor.pressure / 100.f;
     gasResBme680 = iaqSensor.gasResistance;
   }
 
@@ -808,65 +829,65 @@ void sendData() {
   JsonDocument doc;
   doc.clear();
 
-  JsonObject doc_0         = doc.add<JsonObject>();
-  doc_0["measurement"]     = "aht21";
+  JsonObject doc_0 = doc.add<JsonObject>();
+  doc_0["measurement"] = "aht21";
   JsonObject root_0_fields = doc_0["fields"].to<JsonObject>();
-  root_0_fields["temp"]    = tempAht21;
-  root_0_fields["humi"]    = humiAht21;
+  root_0_fields["temp"] = tempAht21;
+  root_0_fields["humi"] = humiAht21;
 
-  JsonObject doc_1         = doc.add<JsonObject>();
-  doc_1["measurement"]     = "bme680";
+  JsonObject doc_1 = doc.add<JsonObject>();
+  doc_1["measurement"] = "bme680";
   JsonObject root_1_fields = doc_1["fields"].to<JsonObject>();
-  root_1_fields["temp"]    = tempBme680;
-  root_1_fields["humi"]    = humiBme680;
-  root_1_fields["press"]   = pressBme680;
-  root_1_fields["gasRes"]  = gasResBme680;
+  root_1_fields["temp"] = tempBme680;
+  root_1_fields["humi"] = humiBme680;
+  root_1_fields["press"] = pressBme680;
+  root_1_fields["gasRes"] = gasResBme680;
 
-  JsonObject doc_2         = doc.add<JsonObject>();
-  doc_2["measurement"]     = "dht22";
+  JsonObject doc_2 = doc.add<JsonObject>();
+  doc_2["measurement"] = "dht22";
   JsonObject root_2_fields = doc_2["fields"].to<JsonObject>();
-  root_2_fields["temp"]    = tempDht22;
-  root_2_fields["humi"]    = humiDht22;
+  root_2_fields["temp"] = tempDht22;
+  root_2_fields["humi"] = humiDht22;
 
-  JsonObject doc_3         = doc.add<JsonObject>();
-  doc_3["measurement"]     = "ens160";
+  JsonObject doc_3 = doc.add<JsonObject>();
+  doc_3["measurement"] = "ens160";
   JsonObject root_3_fields = doc_3["fields"].to<JsonObject>();
-  root_3_fields["aqi"]     = aqiEns160;
-  root_3_fields["tVoc"]    = tvocEns160;
-  root_3_fields["eCo2"]    = eco2Ens160;
+  root_3_fields["aqi"] = aqiEns160;
+  root_3_fields["tVoc"] = tvocEns160;
+  root_3_fields["eCo2"] = eco2Ens160;
 
-  JsonObject doc_4       = doc.add<JsonObject>();
-  doc_4["measurement"]   = "mhz19b";
+  JsonObject doc_4 = doc.add<JsonObject>();
+  doc_4["measurement"] = "mhz19b";
   doc_4["fields"]["co2"] = co2;
 
-  JsonObject doc_5         = doc.add<JsonObject>();
-  doc_5["measurement"]     = "pmsa003a";
+  JsonObject doc_5 = doc.add<JsonObject>();
+  doc_5["measurement"] = "pmsa003a";
   JsonObject root_5_fields = doc_5["fields"].to<JsonObject>();
-  root_5_fields["pm010"]   = pm010;
-  root_5_fields["pm025"]   = pm025;
-  root_5_fields["pm100"]   = pm100;
+  root_5_fields["pm010"] = pm010;
+  root_5_fields["pm025"] = pm025;
+  root_5_fields["pm100"] = pm100;
 
-  JsonObject doc_6         = doc.add<JsonObject>();
-  doc_6["measurement"]     = "scd41";
+  JsonObject doc_6 = doc.add<JsonObject>();
+  doc_6["measurement"] = "scd41";
   JsonObject root_6_fields = doc_6["fields"].to<JsonObject>();
-  root_6_fields["temp"]    = tempScd41;
-  root_6_fields["humi"]    = humiScd41;
-  root_6_fields["co2"]     = co2Scd41;
+  root_6_fields["temp"] = tempScd41;
+  root_6_fields["humi"] = humiScd41;
+  root_6_fields["co2"] = co2Scd41;
 
-  JsonObject doc_7         = doc.add<JsonObject>();
-  doc_7["measurement"]     = "sgp41";
+  JsonObject doc_7 = doc.add<JsonObject>();
+  doc_7["measurement"] = "sgp41";
   JsonObject root_7_fields = doc_7["fields"].to<JsonObject>();
-  root_7_fields["vocIdx"]  = vocIdxSgp41;
-  root_7_fields["noxIdx"]  = noxIdxSgp41;
+  root_7_fields["vocIdx"] = vocIdxSgp41;
+  root_7_fields["noxIdx"] = noxIdxSgp41;
 
-  JsonObject doc_8         = doc.add<JsonObject>();
-  doc_8["measurement"]     = "sht40";
+  JsonObject doc_8 = doc.add<JsonObject>();
+  doc_8["measurement"] = "sht40";
   JsonObject root_8_fields = doc_8["fields"].to<JsonObject>();
-  root_8_fields["temp"]    = tempSht40;
-  root_8_fields["humi"]    = humiSht40;
+  root_8_fields["temp"] = tempSht40;
+  root_8_fields["humi"] = humiSht40;
 
-  JsonObject doc_9       = doc.add<JsonObject>();
-  doc_9["measurement"]   = "veml7700";
+  JsonObject doc_9 = doc.add<JsonObject>();
+  doc_9["measurement"] = "veml7700";
   doc_9["fields"]["lux"] = lux;
 
   doc.shrinkToFit();  // optional
@@ -931,20 +952,20 @@ void reconnectMqtt() {
       _delnF("connected");
       tConnectMqtt.interval(0);
       tConnectMqtt.start();
-      statusLed.blinkNumberOfTimes(300, 300, 3);  // 250ms ON, 750ms OFF, repeat 3 times, blink immediately
+      statusLed.blinkNumberOfTimes(
+        300, 300, 3);  // 250ms ON, 750ms OFF, repeat 3 times, blink immediately
     } else {
       _deVar("failed state: ", mqtt.state());
       _deVarln(" | counter: ", tReconnectMqtt.counter());
       if (tReconnectMqtt.counter() >= 3) {
         tReconnectMqtt.stop();
-        tConnectMqtt.interval(60 * 1000);  // 300 sec. = 5 min.Wait 5 minute before reconnecting.
+        tConnectMqtt.interval(
+          60 * 1000);  // 300 sec. = 5 min.Wait 5 minute before reconnecting.
         tConnectMqtt.start();
       }
     }
   } else {
-    if (tReconnectMqtt.counter() <= 1) {
-      _delnF("WiFi is not connected");
-    }
+    if (tReconnectMqtt.counter() <= 1) { _delnF("WiFi is not connected"); }
   }
 }
 
@@ -958,7 +979,7 @@ void connectMqtt() {
 }
 
 void printScd41Config(String prefix) {
-  float tempOffset       = 0.0f;
+  float tempOffset = 0.0f;
   uint16_t tempOffsetRaw = 0, altitude = 0;
 
   _de(prefix);
@@ -996,16 +1017,21 @@ void setup() {
   }
 
   // BME680
-  iaqSensor.begin(BME68X_I2C_ADDR_HIGH, Wire);  // BME68X_I2C_ADDR_HIGH(default) = 0x77, BME68X_I2C_ADDR_LOW = 0x76
+  iaqSensor.begin(
+    BME68X_I2C_ADDR_HIGH,
+    Wire);  // BME68X_I2C_ADDR_HIGH(default) = 0x77, BME68X_I2C_ADDR_LOW = 0x76
   iaqSensor.updateSubscription(sensorList, 13, BSEC_SAMPLE_RATE_LP);
 
   // VEML7700
   if (!veml.begin()) _delnF("VEML7700 is not found");
   //
   // MH-Z19B
-  mySerial.begin(9600, SERIAL_8N1, rxPin2, txPin2);  // rxPin2(16) <-> tx myMHZ19, txPin2(17) <-> rx myMHZ19
+  mySerial.begin(
+    9600, SERIAL_8N1, rxPin2,
+    txPin2);  // rxPin2(16) <-> tx myMHZ19, txPin2(17) <-> rx myMHZ19
   myMHZ19.begin(mySerial);
-  myMHZ19.autoCalibration();  // Turn auto calibration ON (OFF autoCalibration(false))
+  myMHZ19.autoCalibration();  // Turn auto calibration ON (OFF
+                              // autoCalibration(false))
 
   // PMSA003
   pms.init();
