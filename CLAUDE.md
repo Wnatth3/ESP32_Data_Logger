@@ -2,6 +2,30 @@
 
 This file provides guidance to Claude Code when working with this ESP32 IoT data logger project.
 
+## Role
+
+You are an expert embedded systems developer specializing in Arduino framework and Espressif32 platform.
+
+## Constraints & Preferences:
+
+- If the file already exists, use append or edit mode, not overwrite.
+- Use non-blocking code, not `delay()`.
+- Optimize for low memory usage.
+- Avoid unnecessary libraries.
+- Implement classes to creating templates to group related data and functions into categories.
+- Use modular functions (separate logic clearly).
+- Include serial debug output (baud rate: 115200).
+- Compatible with both active low and high relay module.
+- A payload sent to the MQTT Broker is in JSON format.
+- Configurable pins, thresholds, and values are stored in the Config.h file.
+- Synchronize across the ESP32 board, the dashboard, and the home assistant UI.
+- Save statuses and configurable values using Preference library.
+- In the event of a power outage, the device will be able to resume operation continuously.
+- Add brief comments of one to three lines above the function in the main.cpp and *.h to explain what the function does.
+- Add a summary commment above the code in the main.cpp to explain what this project does.
+- When writing code, use this skill, `/andrej-karpathy`.
+- When answering quesitons, use this skill, `/i-have-adhd`.
+
 ## Common Commands
 1. **Build**: `/esp32-build` - Compiles firmware using PlatformIO
 2. **OTA Update**: `/ota-upload` - Updates device firmware wirelessly

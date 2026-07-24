@@ -32,22 +32,22 @@ class WifiManagerHandler {
 public:
   // ── Config fields (read-only after begin()) ──────────────────────────────
   char mqttBroker[16] = "192.168.0.10";
-  char mqttPort[6]    = "1883";
-  char mqttUser[16]   = "";
-  char mqttPass[16]   = "";
-  bool mqttParameter  = false;
+  char mqttPort[6] = "1883";
+  char mqttUser[16] = "";
+  char mqttPass[16] = "";
+  bool mqttParameter = false;
 
   // ── Static-IP fields (read-only after begin()) ───────────────────────────
-  char staticIp[16]  = "192.168.0.191";
-  char staticGw[16]  = "192.168.0.1";
-  char staticSn[16]  = "255.255.255.0";
+  char staticIp[16] = "192.168.0.191";
+  char staticGw[16] = "192.168.0.1";
+  char staticSn[16] = "255.255.255.0";
   char staticDns[16] = "1.1.1.1";
 
   // ── Constructor ──────────────────────────────────────────────────────────
   WifiManagerHandler(const char* deviceName,
                      const char* apPassword = "password",
                      const char* configFile = "/config.txt",
-                     uint16_t mqttBufSize   = 1024)
+                     uint16_t mqttBufSize = 1024)
       : _deviceName(deviceName)
       , _apPassword(apPassword)
       , _configFile(configFile)
@@ -169,9 +169,9 @@ private:
   const char* _apPassword;
   const char* _configFile;
   uint16_t _mqttBufSize;
-  fs::FS* _fs        = nullptr;
+  fs::FS* _fs = nullptr;
   Task* _connectTask = nullptr;
-  bool _shouldSave   = false;
+  bool _shouldSave = false;
 
   WiFiManager _wifiManager;
   WiFiClient _mqttClient;
@@ -216,18 +216,18 @@ private:
 
     JsonDocument doc;
     doc["mqttBroker"] = mqttBroker;
-    doc["mqttPort"]   = mqttPort;
-    doc["mqttUser"]   = mqttUser;
-    doc["mqttPass"]   = mqttPass;
+    doc["mqttPort"] = mqttPort;
+    doc["mqttUser"] = mqttUser;
+    doc["mqttPass"] = mqttPass;
 
     if (strlen(mqttBroker) > 0) {
       doc["mqttParameter"] = true;
-      mqttParameter        = true;
+      mqttParameter = true;
     }
-    doc["ip"]      = WiFi.localIP().toString();
+    doc["ip"] = WiFi.localIP().toString();
     doc["gateway"] = WiFi.gatewayIP().toString();
-    doc["subnet"]  = WiFi.subnetMask().toString();
-    doc["dns"]     = WiFi.dnsIP().toString();
+    doc["subnet"] = WiFi.subnetMask().toString();
+    doc["dns"] = WiFi.dnsIP().toString();
 
     if (serializeJson(doc, file) == 0) _delnF("Failed to write config");
     else _deVarln("Config saved to ", _configFile);

@@ -43,11 +43,11 @@
 #define SQW_PIN 33
 #define LED_PIN LED_BUILTIN
 
-static constexpr long     NTP_UTC_OFFSET_SEC        = 25200;   // GMT+7
-static constexpr uint16_t JSON_BUFFER_SIZE          = 1100;
-static constexpr uint32_t WIFI_CHECK_INTERVAL_MS    = 600000;  // 10 minutes
+static constexpr long NTP_UTC_OFFSET_SEC = 25200;  // GMT+7
+static constexpr uint16_t JSON_BUFFER_SIZE = 1100;
+static constexpr uint32_t WIFI_CHECK_INTERVAL_MS = 600000;  // 10 minutes
 static constexpr uint32_t MQTT_RECONNECT_INTERVAL_MS = 3000;
-static constexpr uint32_t LOW_POWER_CPU_MHZ         = 80;
+static constexpr uint32_t LOW_POWER_CPU_MHZ = 80;
 
 //******************************** Sensor Objects ***************************//
 SensorBME680 bme680;
@@ -78,12 +78,14 @@ volatile bool rtcTrigger = false;
 Scheduler ts;
 
 void wifiDisconnectedDetect();
-Task tWifiDisconnected(WIFI_CHECK_INTERVAL_MS, TASK_FOREVER, &wifiDisconnectedDetect, &ts, false);
+Task tWifiDisconnected(WIFI_CHECK_INTERVAL_MS, TASK_FOREVER,
+                       &wifiDisconnectedDetect, &ts, false);
 
 void taskConnectMqtt();
 void taskReconnectMqtt();
 Task tConnectMqtt(0, TASK_FOREVER, &taskConnectMqtt, &ts, false);
-Task tReconnectMqtt(MQTT_RECONNECT_INTERVAL_MS, TASK_FOREVER, &taskReconnectMqtt, &ts, false);
+Task tReconnectMqtt(MQTT_RECONNECT_INTERVAL_MS, TASK_FOREVER,
+                    &taskReconnectMqtt, &ts, false);
 
 //******************************** RTC / Time *******************************//
 String strTime(DateTime t) {
@@ -136,7 +138,7 @@ void setupAlarm() {
   _deF("Trigger next time: ");
   _deln(String(roundSec(rtc.now().second() + 20)) + "th sec.");
 #else
-  tMin   = rtc.now().minute();
+  tMin = rtc.now().minute();
   setMin = setMinMatch(tMin);
   rtc.setAlarm1(DateTime(2023, 2, 18, 0, setMin, 0), DS3231_A1_Minute);
   _deln("Trigger next time: " + String(setMin) + "th min.");
@@ -179,7 +181,8 @@ void wifiDisconnectedDetect() {
 }
 
 void taskReconnectMqtt() {
-  wifiHandler.mqttReconnect(tReconnectMqtt.getIterations(), statusLed, tReconnectMqtt, tConnectMqtt);
+  wifiHandler.mqttReconnect(tReconnectMqtt.getIterations(), statusLed,
+                            tReconnectMqtt, tConnectMqtt);
 }
 
 void taskConnectMqtt() {
