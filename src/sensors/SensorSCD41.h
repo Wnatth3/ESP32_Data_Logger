@@ -17,14 +17,18 @@ public:
     float    humi = 0;
     uint16_t co2  = 0;
 
-    void begin() {
+    // persistSettings() writes the SCD41 EEPROM, rated ~50k cycles. Under
+    // deep sleep begin() runs on every wake, so pass persist=true only on a
+    // cold boot; the offset/altitude registers themselves are volatile and
+    // must still be re-applied each time.
+    void begin(bool persist = true) {
         _scd41.begin(Wire, SCD41_I2C_ADDR_62);
         _scd41.wakeUp();
         _scd41.stopPeriodicMeasurement();
         _scd41.reinit();
         _scd41.setTemperatureOffset(TEMP_OFFSET_C);
         _scd41.setSensorAltitude(SITE_ALTITUDE_M);
-        _scd41.persistSettings();
+        if (persist) _scd41.persistSettings();
         _scd41.startPeriodicMeasurement();
     }
 

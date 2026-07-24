@@ -74,6 +74,14 @@ uint8_t tMin;
 uint8_t setMin;
 volatile bool rtcTrigger = false;
 
+// Held in RTC slow memory: survives deep sleep, cleared only on power-on.
+// Plain globals live in DRAM and are wiped by the wake reset, which is what
+// made SGP41 conditioning restart and the SCD41 EEPROM rewrite every cycle.
+RTC_DATA_ATTR uint8_t rtcLastNtpDay = 0;  // day-of-month of last NTP sync
+RTC_DATA_ATTR bool rtcScd41Persisted = false;
+RTC_DATA_ATTR uint16_t rtcSgp41Conditioning =
+  SensorSHT40SGP41::CONDITIONING_CYCLES;
+
 //******************************** Tasks ************************************//
 Scheduler ts;
 
@@ -88,8 +96,11 @@ Task tReconnectMqtt(MQTT_RECONNECT_INTERVAL_MS, TASK_FOREVER,
                     &taskReconnectMqtt, &ts, false);
 
 //******************************** RTC / Time *******************************//
-String strTime(DateTime t) {
-  char buf[] = "YYYY MMM DD (DDD) hh:mm:ss";
+// Formats into a caller-owned buffer (>= 27 bytes) and returns it, so the
+// wake path does no heap allocation. RTClib's toString() overwrites the
+// format template in place.
+char* strTime(DateTime t, char* buf) {
+  strcpy(buf, "YYYY MMM DD (DDD) hh:mm:ss");
   return t.toString(buf);
 }
 
@@ -110,22 +121,41 @@ uint8_t roundSec(uint8_t sec) {
   return sec > 60 ? sec - 60 : sec;
 }
 
-void syncRtc() {
+void rtcBegin() {
   if (!rtc.begin()) _delnF("Couldn't find RTC!");
+}
+
+// forceUpdate() is a blocking network round-trip. The DS3231 drifts only a
+// few seconds a month, so sync once a day, not once a wake. WiFi must already
+// be up - in BATTERY_MODE that is only true inside fetchData().
+void syncRtcIfDue() {
+  uint8_t today = rtc.now().day();
+  if (rtcLastNtpDay == today) return;
+
+  if (WiFi.status() != WL_CONNECTED) {
+    _delnF("NTP sync skipped: WiFi down.");
+    return;
+  }
+
   timeClient.begin();
   timeClient.forceUpdate();
   if (timeClient.isTimeSet()) {
     rtc.adjust(DateTime(timeClient.getEpochTime()));
-    _delnF("\nNTP sync succeeded.");
+    rtcLastNtpDay = today;
+    _delnF("NTP sync succeeded.");
   } else {
-    _delnF("\nNTP sync failed.");
+    _delnF("NTP sync failed; keeping RTC time.");
   }
 }
 
 void setupAlarm() {
   if (rtc.lostPower()) rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 
-  _deln("\n\t" + strTime(rtc.now()));
+#ifdef _DEBUG_
+  char timeBuf[27];
+  _deF("\n\t");
+  _deln(strTime(rtc.now(), timeBuf));
+#endif
 
   rtc.disable32K();
   rtc.clearAlarm(1);
@@ -136,12 +166,15 @@ void setupAlarm() {
 #ifdef _20SecTest
   rtc.setAlarm1(rtc.now() + TimeSpan(0, 0, 0, 20), DS3231_A1_Second);
   _deF("Trigger next time: ");
-  _deln(String(roundSec(rtc.now().second() + 20)) + "th sec.");
+  _de(roundSec(rtc.now().second() + 20));
+  _delnF("th sec.");
 #else
   tMin = rtc.now().minute();
   setMin = setMinMatch(tMin);
   rtc.setAlarm1(DateTime(2023, 2, 18, 0, setMin, 0), DS3231_A1_Minute);
-  _deln("Trigger next time: " + String(setMin) + "th min.");
+  _deF("Trigger next time: ");
+  _de(setMin);
+  _delnF("th min.");
 #endif
   _delnF("\tAlarm setting done.");
 }
@@ -165,6 +198,18 @@ bool checkMinMatch(int m) {
 #endif
 
 //******************************** Sleep ************************************//
+// True when deep sleep ended because the DS3231 alarm pulled SQW low (EXT0).
+// Always false in non-battery builds, which stay powered and use the ISR.
+bool wokeFromRtcAlarm() {
+#ifdef BATTERY_MODE
+  bool woke = esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0;
+  _deVarln("Woke from RTC alarm: ", woke ? "yes" : "no (cold boot)");
+  return woke;
+#else
+  return false;
+#endif
+}
+
 void enterLowPowerSleep() {
 #ifdef BATTERY_MODE
   _delnF("Entering deep sleep until RTC alarm...");
@@ -214,6 +259,8 @@ void readData() {
   sht40sgp41.print();
   veml7700.print();
 
+  rtcSgp41Conditioning = sht40sgp41.conditioningLeft();  // carry across sleep
+
   _delnF("\tData reading done.");
 }
 
@@ -250,6 +297,7 @@ void fetchData() {
 #ifdef _20SecTest
   readData();
   if (wifiHandler.connect()) {
+    syncRtcIfDue();
     sendData();
     wifiHandler.disconnect();
   }
@@ -266,6 +314,7 @@ void fetchData() {
   if (checkMinMatch(nowMin)) {
     readData();
     if (wifiHandler.connect()) {
+      syncRtcIfDue();
       sendData();
       wifiHandler.disconnect();
     }
@@ -287,9 +336,12 @@ void setup() {
   pinMode(SQW_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(SQW_PIN), onRtcTrigger, FALLING);
 
-  while (!LittleFS.begin(true)) {
-    _delnF("Failed to initialize LittleFS");
-    delay(1000);
+  // begin(true) formats on mount failure, so a failure here is a partition or
+  // flash fault that retrying cannot clear. LittleFS only holds WiFi/MQTT
+  // config and every reader guards against a missing file, so boot degraded
+  // (portal still works, settings just won't persist) rather than hang.
+  if (!LittleFS.begin(true)) {
+    _delnF("LittleFS mount failed - config will not persist this boot");
   }
 
   // ── Sensors ──────────────────────────────────────────────────────────────
@@ -297,15 +349,27 @@ void setup() {
   veml7700.begin();
   mhz19b.begin();
   pmsa003.begin();
-  scd41.begin();
+  scd41.begin(!rtcScd41Persisted);  // EEPROM write on cold boot only
+  rtcScd41Persisted = true;
   sht40sgp41.begin();
+  sht40sgp41.setConditioningLeft(rtcSgp41Conditioning);
   ens160aht21.begin();
   dht22.begin();
 
   // ── WiFi / MQTT ───────────────────────────────────────────────────────────
   wifiHandler.begin(LittleFS);  // load config, run WiFiManager portal
-  syncRtc();
-  setupAlarm();
+  rtcBegin();                   // NTP now runs from fetchData(), once a day
+
+  // Deep sleep resets the SoC, so rtcTrigger is always false on wake and the
+  // SQW falling edge happens while we are powered down - the ISR can never
+  // see it. The EXT0 wake cause is the alarm, so raise the trigger from it.
+  // fetchData() arms the next alarm itself; only a cold boot needs the first.
+  if (wokeFromRtcAlarm()) {
+    rtcTrigger = true;
+  } else {
+    setupAlarm();
+  }
+
   wifiHandler.mqttInit(tConnectMqtt);  // start MQTT task if credentials exist
 
 #ifndef BATTERY_MODE

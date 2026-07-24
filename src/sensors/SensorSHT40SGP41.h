@@ -7,6 +7,8 @@
 
 class SensorSHT40SGP41 {
 public:
+    static constexpr uint16_t CONDITIONING_CYCLES = 10;
+
     float   tempSht40 = 0;
     float   humiSht40 = 0;
     int32_t vocIdx    = 0;
@@ -53,6 +55,12 @@ public:
 
     bool isConditioned() const { return _conditioning_s == 0; }
 
+    // Conditioning progress must be carried across deep sleep by the caller,
+    // otherwise the counter restarts each wake and measureRawSignals() never
+    // runs - VOC/NOx would publish as 0 forever.
+    uint16_t conditioningLeft() const { return _conditioning_s; }
+    void setConditioningLeft(uint16_t n) { _conditioning_s = n; }
+
     void print() {
         _deF("SHT40: Temp: ");   _de(tempSht40, 2);
         _deF(" C | Humi: ");     _de(humiSht40, 2); _delnF(" %");
@@ -82,7 +90,7 @@ private:
     VOCGasIndexAlgorithm _voc;
     NOxGasIndexAlgorithm _nox;
 
-    uint16_t _conditioning_s = 10;
+    uint16_t _conditioning_s = CONDITIONING_CYCLES;
     uint16_t _error          = 0;
     char     _errMsg[256];
 
