@@ -18,13 +18,13 @@ AllowShortBlocksOnASingleLine:        Always
 BreakConstructorInitializers:         BeforeComma
 
 # ── Column limit & line breaking ─────────────────────────────────────────────
-ColumnLimit:                0
+ColumnLimit:                80
 AlwaysBreakAfterReturnType: ExceptShortType
 BinPackParameters:          BinPack   # when params wrap, one per line
 AlignAfterOpenBracket:      true   # wrapped args align under '('
 
 # ── Alignment ────────────────────────────────────────────────────────────────
-AlignConsecutiveAssignments:   Consecutive  # aligns '=' in assignment blocks
+AlignConsecutiveAssignments:   None # Consecutive  # aligns '=' in assignment blocks
 AlignTrailingComments:         true
 AlignOperands:                 Align
 AlignArrayOfStructures:        Right
